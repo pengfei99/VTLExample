@@ -1,0 +1,10 @@
+{
+  "dataStructure": [
+    {"name": "my_name", "type": "STRING", "role": "IDENTIFIER"},
+    {"age": "my_age", "type": "INTEGER", "role": "MEASURE"}
+  ],
+  "dataPoints": [
+    ["name1", 20],
+    ["name2", 30]
+  ]
+}
