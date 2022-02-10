@@ -19,10 +19,11 @@ public class main {
         // By default, if a variable role is not defined, the `MEASURE` will be affected.
         InMemoryDataset dataset = new InMemoryDataset(
                 List.of(
-                        Map.of("name", "Alice", "sex", "F", "age", 25),
-                        Map.of("name", "Bob", "sex", "M", "age", 30)
+                        Map.of("name", "Alice", "sex", "F", "age", 25L),
+                        Map.of("name", "Bob", "sex", "M", "age", 30L),
+                        Map.of("name", "Charlie", "sex", "M", "age", 5L)
                 ),
-                Map.of("name", String.class, "sex", String.class, "age", Integer.class),
+                Map.of("name", String.class, "sex", String.class, "age", Long.class),
                 Map.of("name", Dataset.Role.IDENTIFIER,"sex", Dataset.Role.MEASURE,"age", Dataset.Role.MEASURE)
 
         );
