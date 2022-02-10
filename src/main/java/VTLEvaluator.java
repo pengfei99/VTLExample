@@ -21,7 +21,8 @@ public class main {
                 List.of(
                         Map.of("name", "Alice", "sex", "F", "age", 25L),
                         Map.of("name", "Bob", "sex", "M", "age", 30L),
-                        Map.of("name", "Charlie", "sex", "M", "age", 5L)
+                        Map.of("name", "Charlie", "sex", "M", "age", 5L),
+                        Map.of("name", "toto", "sex", "M", "age", -1L)
                 ),
                 Map.of("name", String.class, "sex", String.class, "age", Long.class),
                 Map.of("name", Dataset.Role.IDENTIFIER,"sex", Dataset.Role.MEASURE,"age", Dataset.Role.MEASURE)
@@ -36,25 +37,28 @@ public class main {
         ScriptContext context = engine.getContext();
         context.setBindings(bindings, ScriptContext.ENGINE_SCOPE);
 
+        String query1= "age_val_anomalies := users[filter age < 0];";
+        String query2= "age_val_anomalies := users[filter age < 0];";
         // define a validation rule on dataset, column age can't have null values
-        String transformation= "res := users[filter age > 6];";
+        // The keyword check is not implemented for now. So we can't test below query.
+        // For more information about VTL https://inseefr.github.io/Trevas/en/coverage.html
         String validation_rule = "res := check(users[filter not isnull(age)] >= 1 " +
                 "errorcode \"Values, when provided, should be higher or equal to 1\"\n" +
                 "errorlevel \"Warning\");";
 
         // apply validation rule a
         try {
-            engine.eval(transformation);
+            engine.eval(query1);
         } catch (ScriptException e) {
             e.printStackTrace();
         }
 
         Bindings outputBindings = engine.getContext().getBindings(ScriptContext.ENGINE_SCOPE);
 
-        InMemoryDataset res = (InMemoryDataset) outputBindings.get("res");
+        InMemoryDataset ageValAnomalies = (InMemoryDataset) outputBindings.get("age_val_anomalies");
 
-        List<List<Object>> resList = res.getDataAsList();
-        System.out.println(resList);
+        List<List<Object>> resList = ageValAnomalies.getDataAsList();
+        System.out.println("Column age value anomalies: "+resList);
 
 
     }
