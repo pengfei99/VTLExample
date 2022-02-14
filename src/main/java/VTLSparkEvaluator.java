@@ -8,6 +8,7 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import scala.collection.Seq;
 
 import javax.script.*;
 import java.nio.file.Paths;
@@ -74,10 +75,9 @@ public class VTLSparkEvaluator {
 
         Bindings outputBindings = engine.getContext().getBindings(ScriptContext.ENGINE_SCOPE);
 
-        InMemoryDataset res = (InMemoryDataset) outputBindings.get("res");
-
-        List<List<Object>> ageValAnomaliesList = res.getDataAsList();
-        System.out.println("res: " + ageValAnomaliesList);
+        fr.insee.vtl.model.Dataset res = (fr.insee.vtl.model.Dataset) outputBindings.get("res");
+        List<List<Object>> result = res.getDataAsList();
+        System.out.println("res: " + result);
 
     }
 }

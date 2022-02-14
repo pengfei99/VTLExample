@@ -39,7 +39,7 @@ public class VTLEvaluator {
 
         String query1= "ageValAnomalies := users[filter age < 0];";
         String query2= "age_null_val := users[filter isnull(age)];";
-        String query3= "ageValAnomalies := users[filter age < 0 and age >100];";
+        String query3= "ageValAnomalies := users[filter age < 0 or age >100];";
         // define a validation rule on dataset, column age can't have null values
         // The keyword check is not implemented for now. So we can't test below query.
         // For more information about VTL https://inseefr.github.io/Trevas/en/coverage.html
@@ -49,7 +49,7 @@ public class VTLEvaluator {
 
         // apply query1 et query2
         try {
-            engine.eval(query1);
+            engine.eval(query3);
             //engine.eval(query2);
             //engine.eval(query3);
         } catch (ScriptException e) {
