@@ -19,6 +19,27 @@
             <artifactId>vtl-engine</artifactId>
             <version>0.3.0</version>
         </dependency>
+        <dependency>
+            <groupId>fr.insee.trevas</groupId>
+            <artifactId>vtl-spark</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-core -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-core_2.13</artifactId>-->
+<!--            <version>3.2.1</version>-->
+<!--        </dependency>-->
+
+        <!-- https://mvnrepository.com/artifact/org.apache.spark/spark-sql -->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-sql_2.13</artifactId>-->
+<!--            <version>3.2.1</version>-->
+<!--            <scope>provided</scope>-->
+<!--        </dependency>-->
+
 
     </dependencies>
     
