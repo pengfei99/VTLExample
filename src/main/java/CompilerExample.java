@@ -1,4 +1,5 @@
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.RelationalGroupedDataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 
@@ -10,6 +11,7 @@ import java.util.Map;
 
 import static org.apache.spark.sql.functions.*;
 import static org.apache.spark.sql.functions.percentile_approx;
+
 
 
 public class CompilerExample {
@@ -39,46 +41,26 @@ public class CompilerExample {
         result.show();
     }
 
-    public void AggregateDynamicExample(Dataset<Row> df) {
-        String groupByColName="country";
-        String temptableName="users";
-        List<Map<String, String>> components = new LinkedList<>();
-        Map<String, String> component1 = new HashMap<>();
-        component1.put("action", "sum");
-        component1.put("colName", "age");
-        component1.put("targetColName", "sumAge");
-
-        Map<String, String> component2 = new HashMap<>();
-        component2.put("action", "min");
-        component2.put("colName", "age");
-        component2.put("targetColName", "minAge");
-
-        Map<String, String> component3 = new HashMap<>();
-        component3.put("action", "sum");
-        component3.put("colName", "weight");
-        component3.put("targetColName", "avgWeight");
-
-        Map<String, String> component4 = new HashMap<>();
-        component4.put("action", "max");
-        component4.put("colName", "age");
-        component4.put("targetColName", "maxAge");
-
-        components.add(component1);
-        components.add(component2);
-        components.add(component3);
-        components.add(component4);
+    public void AggregateDynamicExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components) {
+        String temptableName = "users";
         String full_agg_expr = "";
         for (int i = 0; i < components.size(); i++) {
             Map<String, String> element = components.get(i);
+            String action = element.get("action");
+            Object[] params = new Object[]{action, element.get("colName"), element.get("targetColName")};
+            String msg;
+            if (action == "count") {
+                msg = MessageFormat.format("{0}(*) as {2}", params);
+            } else {
+                msg = MessageFormat.format("{0}({1}) as {2}", params);
+            }
 
-            Object[] params = new Object[]{element.get("action"), element.get("colName"), element.get("targetColName")};
-            String msg = MessageFormat.format("{0}({1}) as {2}", params);
             if (i == components.size() - 1) full_agg_expr = full_agg_expr + msg + " ";
             else full_agg_expr = full_agg_expr + msg + ", ";
 
         }
-        Object[] params = new Object[]{groupByColName,full_agg_expr,temptableName,};
-        String full_message=MessageFormat.format("Select {0}, {1} from {2} group by {0}",params);
+        Object[] params = new Object[]{groupByColName, full_agg_expr, temptableName,};
+        String full_message = MessageFormat.format("Select {0}, {1} from {2} group by {0}", params);
         System.out.println(full_message);
 
 
@@ -89,6 +71,46 @@ public class CompilerExample {
         //  percentile_approx("age", 0.5, 10000).alias("medianAge"),
         Dataset<Row> result = spark.sql(full_message);
         result.show();
+    }
+
+    public void joinIndividualAggExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components) {
+        List<Dataset<Row>> dfs = new LinkedList<>();
+        for (Map<String, String> component : components) {
+            String action = component.get("action");
+            String colName = component.get("colName");
+            String targetColName = component.get("targetColName");
+            // System.out.println(targetColName);
+            RelationalGroupedDataset df_group = df.groupBy(groupByColName);
+            switch (action) {
+                case "min":
+                    Dataset<Row> df_min = df_group.min(colName).alias(targetColName);
+                    dfs.add(df_min);
+                    break;
+                case "max":
+                    Dataset<Row> df_max = df_group.max(colName).alias(targetColName);
+                    dfs.add(df_max);
+                    break;
+                case "avg":
+                    Dataset<Row> df_avg = df_group.avg(colName).alias(targetColName);
+                    dfs.add(df_avg);
+                    break;
+                case "sum":
+                    Dataset<Row> df_sum = df_group.sum(colName).alias(targetColName);
+                    dfs.add(df_sum);
+                    break;
+                case "count":
+                    Dataset<Row> df_count = df_group.count().alias(targetColName);
+                    dfs.add(df_count);
+                    break;
+            }
+        }
+        Dataset<Row> dfl = dfs.get(0);
+        for (int i = 1; i < dfs.size(); i++) {
+            Dataset<Row> dfr = dfs.get(i);
+            dfl = dfl.join(dfr, "country");
+        }
+        dfl.show();
+
     }
 
     public static void main(String[] args) {
@@ -103,8 +125,51 @@ public class CompilerExample {
         Dataset<Row> df = spark.read().option("header", "true").option("inferSchema", "true").csv(path);
         df.show();
         df.printSchema();
+
+        // parser Input
+        String groupByColName = "country";
+        List<Map<String, String>> components = new LinkedList<>();
+        //agg function 1
+        Map<String, String> component1 = new HashMap<>();
+        component1.put("action", "sum");
+        component1.put("colName", "age");
+        component1.put("targetColName", "sumAge");
+
+        //agg function 2
+        Map<String, String> component2 = new HashMap<>();
+        component2.put("action", "min");
+        component2.put("colName", "age");
+        component2.put("targetColName", "minAge");
+
+        //agg function 3
+        Map<String, String> component3 = new HashMap<>();
+        component3.put("action", "avg");
+        component3.put("colName", "weight");
+        component3.put("targetColName", "avgWeight");
+
+
+        //agg function 4
+        Map<String, String> component4 = new HashMap<>();
+        component4.put("action", "max");
+        component4.put("colName", "age");
+        component4.put("targetColName", "maxAge");
+
+        //agg function 5
+        Map<String, String> component5 = new HashMap<>();
+        component5.put("action", "count");
+        component5.put("colName", "*");
+        component5.put("targetColName", "countVal");
+
+        components.add(component1);
+        components.add(component2);
+        components.add(component3);
+        components.add(component4);
+        components.add(component5);
+
         CompilerExample ce = new CompilerExample(spark);
-        ce.AggregateDynamicExample(df);
+        ce.AggregateDynamicExample(df, groupByColName, components);
+
+        ce.joinIndividualAggExample(df, groupByColName, components);
 
     }
 }
