@@ -44,6 +44,7 @@ public class CompilerExample {
     public void AggregateDynamicExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components) {
         String temptableName = "users";
         String full_agg_expr = "";
+        // simulate dynamic full spark sql query building in processingEngine.executeAggr()
         for (int i = 0; i < components.size(); i++) {
             Map<String, String> element = components.get(i);
             String action = element.get("action");
@@ -54,7 +55,6 @@ public class CompilerExample {
             } else {
                 msg = MessageFormat.format("{0}({1}) as {2}", params);
             }
-
             if (i == components.size() - 1) full_agg_expr = full_agg_expr + msg + " ";
             else full_agg_expr = full_agg_expr + msg + ", ";
 
@@ -63,9 +63,7 @@ public class CompilerExample {
         String full_message = MessageFormat.format("Select {0}, {1} from {2} group by {0}", params);
         System.out.println(full_message);
 
-
         df.createOrReplaceTempView(temptableName);
-
 
         // corresponding spark query
         //  percentile_approx("age", 0.5, 10000).alias("medianAge"),
@@ -75,6 +73,8 @@ public class CompilerExample {
 
     public void joinIndividualAggExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components) {
         List<Dataset<Row>> dfs = new LinkedList<>();
+        
+        // here I simulate the logic of each componentExpressionVisitor.visit(groupFunctionCtx.expr()) in aggrClause.visitAggrClause()
         for (Map<String, String> component : components) {
             String action = component.get("action");
             String colName = component.get("colName");
@@ -167,8 +167,11 @@ public class CompilerExample {
         components.add(component5);
 
         CompilerExample ce = new CompilerExample(spark);
+        
+        # simulate execute all aggregate actions with one single groupby without join in processingEngine.executeAggr()
         ce.AggregateDynamicExample(df, groupByColName, components);
-
+        
+        # simulate execute aggregate action in each visit then join the result in processingEngine.executeAggr()
         ce.joinIndividualAggExample(df, groupByColName, components);
 
     }
