@@ -169,10 +169,19 @@ public class CompilerExample {
         CompilerExample ce = new CompilerExample(spark);
         
         # simulate execute all aggregate actions with one single groupby without join in processingEngine.executeAggr()
+        long startTime1 = System.nanoTime();    
         ce.AggregateDynamicExample(df, groupByColName, components);
+        long endTime1 = System.nanoTime();
+        long duration1 = (endTime1 - startTime1);
+        System.out.print("Duration of AggregateDyn: "+duration1)
         
         # simulate execute aggregate action in each visit then join the result in processingEngine.executeAggr()
+        long startTime2 = System.nanoTime();
         ce.joinIndividualAggExample(df, groupByColName, components);
+        long endTime2 = System.nanoTime();
+        long duration2=(endTime2-startTime2);
+        System.out.print("Duration of AggregateDyn: "+duration1)
+        
 
     }
 }
