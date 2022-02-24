@@ -6,8 +6,9 @@ Here I compare the performance between:
 
 ## Test environment
 
-hardware: 4 vcore, 6GB ram
-software: Linux ubuntu 5.13.0-30-generic
+- hardware: 4 vcore, 6GB ram
+
+- software: Linux ubuntu 5.13.0-30-generic
 
 ## Test data source
 
