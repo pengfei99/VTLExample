@@ -13,7 +13,9 @@ Here I compare the performance between:
 ## Test data source
 
 The test data is from [san francisco fire department](https://data.sfgov.org/Public-Safety/Fire-Incidents/wr8u-xric).
+
 **It contains 5500519 rows in total**
+
 Below is the schema:
 
 ```text
@@ -70,8 +72,8 @@ Time gap: -416 milli seconds
 ```
 
 Conclusion : joinIndividualAggExample is quicker. Because to generate sql query dynamically, I need to use spark
-to create a tempView and call run pure sql on it. This adds a layer which requires spark context to translate it to scala
-function first.
+to create a tempView and call sql query on it. This adds a layer which requires spark context to translate it to spark
+function first. This adds extra time to AggregateDynamicExample. As joinIndividualAggExample has only one aggregation function, so I use spark function directly. This is quicker compare to calling sql on tempView. 
 
 ### Case 2: 5 aggregation function in groupBy
 
@@ -86,8 +88,8 @@ Duration of joinIndividualAgg: 3605542392 nano seconds
 Time gap: 2379 milli seconds
 ```
 
-Conclusion : AggregateDynamicExample is much quicker. Even with the tempView layer, one dynamic join is much faster than
-joining multi group by 
+Conclusion : This time AggregateDynamicExample is much quicker. Because even with the tempView layer, one dynamic join is much faster than
+joining the result of multiply group by. 
 
 ### Case 3: 6 aggregation function in groupBy
 
@@ -104,5 +106,5 @@ Duration of joinIndividualAgg: 6759017360 nano seconds
 Time gap: 3086 milli seconds
 ```
 
-Conclusion : AggregateDynamicExample is quicker. The more aggregation functions in groupBy, the more time  one single groupBy
-approach can save. The column type will not affect the end result.
+Conclusion : AggregateDynamicExample is quicker. The more aggregation functions in groupBy, the more time one single groupBy
+approach can save. The column type(e.g. numeric, categorical, etc.) will not affect the end result.
