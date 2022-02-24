@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.spark.sql.functions.*;
-import static org.apache.spark.sql.functions.percentile_approx;
-
 
 
 public class CompilerExample {
@@ -68,10 +66,10 @@ public class CompilerExample {
         // corresponding spark query
         //  percentile_approx("age", 0.5, 10000).alias("medianAge"),
         Dataset<Row> result = spark.sql(full_message);
-        result.show();
+        result.show(5);
     }
 
-    public void joinIndividualAggExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components) {
+    public void joinIndividualAggExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components,String joinColName) {
         List<Dataset<Row>> dfs = new LinkedList<>();
         
         // here I simulate the logic of each componentExpressionVisitor.visit(groupFunctionCtx.expr()) in aggrClause.visitAggrClause()
@@ -102,32 +100,24 @@ public class CompilerExample {
                     Dataset<Row> df_count = df_group.count().alias(targetColName);
                     dfs.add(df_count);
                     break;
+                case "collect_list":
+                    Dataset<Row> df_collect = df_group.agg(collect_list(colName).alias(targetColName));
+                    dfs.add(df_collect);
+                    break;
+                default:
+                    System.out.println("Unknown aggregation action");
             }
         }
         Dataset<Row> dfl = dfs.get(0);
         for (int i = 1; i < dfs.size(); i++) {
             Dataset<Row> dfr = dfs.get(i);
-            dfl = dfl.join(dfr, "country");
+            dfl = dfl.join(dfr, joinColName);
         }
-        dfl.show();
+        dfl.show(5);
 
     }
 
-    public static void main(String[] args) {
-        //prepare spark session
-        SparkSession spark = SparkSession
-                .builder()
-                .master("local[4]")
-                .appName("Spark VTL example")
-                .getOrCreate();
-        // read csv file
-        String path = "/home/pliu/git/VTLExample/data/users.csv";
-        Dataset<Row> df = spark.read().option("header", "true").option("inferSchema", "true").csv(path);
-        df.show();
-        df.printSchema();
-
-        // parser Input
-        String groupByColName = "country";
+    public List<Map<String, String>> getActions(){
         List<Map<String, String>> components = new LinkedList<>();
         //agg function 1
         Map<String, String> component1 = new HashMap<>();
@@ -166,22 +156,144 @@ public class CompilerExample {
         components.add(component4);
         components.add(component5);
 
-        CompilerExample ce = new CompilerExample(spark);
-        
-        # simulate execute all aggregate actions with one single groupby without join in processingEngine.executeAggr()
-        long startTime1 = System.nanoTime();    
-        ce.AggregateDynamicExample(df, groupByColName, components);
+        return components;
+
+    }
+
+
+    public List<Map<String, String>> getActions1(){
+        List<Map<String, String>> components = new LinkedList<>();
+        //agg function 1
+        Map<String, String> component1 = new HashMap<>();
+        component1.put("action", "sum");
+        component1.put("colName", "NumberofAlarms");
+        component1.put("targetColName", "sumNumberofAlarms");
+
+        //agg function 2
+        Map<String, String> component2 = new HashMap<>();
+        component2.put("action", "min");
+        component2.put("colName", "NumberofAlarms");
+        component2.put("targetColName", "minNumberofAlarms");
+
+        //agg function 3
+        Map<String, String> component3 = new HashMap<>();
+        component3.put("action", "avg");
+        component3.put("colName", "NumberofAlarms");
+        component3.put("targetColName", "avgNumberofAlarms");
+
+
+        //agg function 4
+        Map<String, String> component4 = new HashMap<>();
+        component4.put("action", "max");
+        component4.put("colName", "NumberofAlarms");
+        component4.put("targetColName", "NumberofAlarms");
+
+        //agg function 5
+        Map<String, String> component5 = new HashMap<>();
+        component5.put("action", "count");
+        component5.put("colName", "*");
+        component5.put("targetColName", "countVal");
+
+        components.add(component1);
+        components.add(component2);
+        components.add(component3);
+        components.add(component4);
+        components.add(component5);
+        return components;
+    }
+
+    public List<Map<String, String>> getActions2(){
+        List<Map<String, String>> components = new LinkedList<>();
+
+
+        //agg function 5
+        Map<String, String> component1 = new HashMap<>();
+        component1.put("action", "count");
+        component1.put("colName", "*");
+        component1.put("targetColName", "countVal");
+
+        components.add(component1);
+        return components;
+    }
+
+    public List<Map<String, String>> getActions3(){
+        List<Map<String, String>> components = this.getActions1();
+
+        Map<String, String> component6 = new HashMap<>();
+        component6.put("action", "collect_list");
+        component6.put("colName", "City");
+        component6.put("targetColName", "allCities");
+
+
+        components.add(component6);
+        return components;
+    }
+
+    public void performenceTest(Dataset<Row> df, List<Map<String, String>> components, String groupByColName){
+
+        // simulate execute all aggregate actions with one single groupby without join in processingEngine.executeAggr()
+        long startTime1 = System.nanoTime();
+        this.AggregateDynamicExample(df, groupByColName, components);
         long endTime1 = System.nanoTime();
         long duration1 = (endTime1 - startTime1);
-        System.out.print("Duration of AggregateDyn: "+duration1)
-        
-        # simulate execute aggregate action in each visit then join the result in processingEngine.executeAggr()
+        System.out.println("Duration of AggregateDynamic: "+duration1+ " nano seconds");
+
+        // simulate execute aggregate action in each visit then join the result in processingEngine.executeAggr()
         long startTime2 = System.nanoTime();
-        ce.joinIndividualAggExample(df, groupByColName, components);
+        this.joinIndividualAggExample(df, groupByColName, components, groupByColName);
         long endTime2 = System.nanoTime();
         long duration2=(endTime2-startTime2);
-        System.out.print("Duration of AggregateDyn: "+duration1)
-        
+        System.out.println("Duration of joinIndividualAgg: "+duration2+ " nano seconds");
+
+        long timeGain=(duration2-duration1)/1000000;
+
+        System.out.println("Time gap: " + timeGain + " milli seconds" );
+    }
+
+    public static void main(String[] args) {
+        //prepare spark session
+        SparkSession spark = SparkSession
+                .builder()
+                .master("local[4]")
+                .appName("Spark VTL example")
+                .getOrCreate();
+
+        CompilerExample ce = new CompilerExample(spark);
+
+//        // read csv file
+//        String path = "/home/pliu/git/VTLExample/data/users.csv";
+//        Dataset<Row> df = spark.read().option("header", "true").option("inferSchema", "true").csv(path);
+//        df.show();
+//        df.printSchema();
+//        String groupByColName = "country";
+//        List<Map<String, String>> actions = ce.getActions();
+//        ce.performenceTest(df,actions,groupByColName);
+
+
+        // read sf_fire parquet
+        String sf_fire_path="/home/pliu/data_set/sf_fire";
+        Dataset<Row> df1=spark.read().parquet(sf_fire_path);
+        df1.show();
+        df1.printSchema();
+        long rowNumber=df1.count();
+        System.out.println("Row number: "+rowNumber);
+
+        String groupByColName1 = "CallType";
+
+        // test case 1
+//        List<Map<String, String>> actions2 = ce.getActions2();
+//        ce.performenceTest(df1,actions2,groupByColName1);
+
+        // test case 2
+//        List<Map<String, String>> actions1 = ce.getActions1();
+//        ce.performenceTest(df1,actions1,groupByColName1);
+
+        // test case 3
+        List<Map<String, String>> actions3 = ce.getActions3();
+        ce.performenceTest(df1,actions3,groupByColName1);
+
+
+
 
     }
 }
