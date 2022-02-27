@@ -108,3 +108,17 @@ Time gap: 3086 milli seconds
 
 Conclusion : AggregateDynamicExample is quicker. The more aggregation functions in groupBy, the more time one single groupBy
 approach can save. The column type(e.g. numeric, categorical, etc.) will not affect the end result.
+
+## Execution plan of spark
+
+### Execution plan of AggregateDynamicExample
+Below figure is the execution plan of function AggregateDynamicExample (which uses one groupBy). You can notice that
+there is only one shuffle between the two stage. The best we can do for a groupby aggregation operation.
+
+![AggregateDynamicExample](../images/oneGroupByPlan.png)
+
+### Execution plan of joinIndividualAggExample
+Below figure is the execution plan of function joinIndividualAggExample (which joins multi groupBy). You can notice there
+are **six shuffle between 7 stage**, which is not good at all.
+
+![joinIndividualAggExample](../images/joinAggregatPlan.png)
