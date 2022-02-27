@@ -36,7 +36,8 @@ public class CompilerExample {
                         min("age").alias("minAge"),
                         count("*").alias("countVal"));
 
-        result.show();
+
+        result.explain(true);
     }
 
     public void AggregateDynamicExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components) {
@@ -65,8 +66,12 @@ public class CompilerExample {
 
         // corresponding spark query
         //  percentile_approx("age", 0.5, 10000).alias("medianAge"),
-        Dataset<Row> result = spark.sql(full_message);
-        result.show(5);
+        spark.sql(full_message).explain(true);
+        //Dataset<Row> result = spark.sql(full_message);
+
+
+
+       //result.show(5);
     }
 
     public void joinIndividualAggExample(Dataset<Row> df, String groupByColName, List<Map<String, String>> components,String joinColName) {
@@ -113,7 +118,7 @@ public class CompilerExample {
             Dataset<Row> dfr = dfs.get(i);
             dfl = dfl.join(dfr, joinColName);
         }
-        dfl.show(5);
+        dfl.explain(true);
 
     }
 
